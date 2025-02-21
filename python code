@@ -1,0 +1,38 @@
+import paho.mqtt.client as mqtt
+
+# MQTT Broker details
+MQTT_BROKER = "MQTT_BROKER_ADDRESS"
+MQTT_PORT = 1883
+MQTT_TOPIC = "gas_leakage/data"
+MQTT_USERNAME = "MQTT_USERNAME"
+MQTT_PASSWORD = "MQTT_PASSWORD"
+
+# Threshold for gas leakage
+GAS_THRESHOLD = 500
+
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code " + str(rc))
+    client.subscribe(MQTT_TOPIC)
+
+def on_message(client, userdata, msg):
+    gas_value = int(msg.payload.decode())
+    print(f"Average Gas Sensor Value: {gas_value}")
+
+    # Critical Control Point (CCP)
+    if gas_value > GAS_THRESHOLD:
+        print("Gas Leakage Detected! Take action immediately.")
+        # Add actions like sending alerts, activating alarms, etc.
+    else:
+        print("No gas leakage detected.")
+
+# Set up MQTT client
+client = mqtt.Client()
+client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+client.on_connect = on_connect
+client.on_message = on_message
+
+# Connect to the broker
+client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
+# Start the loop
+client.loop_forever()
