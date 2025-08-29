@@ -1,8 +1,50 @@
-# iot-based-gas-detector
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+🚨 IoT-Based Gas Detector using ESP8266 & MQTT
 
-// WiFi and MQTT setup
+This project implements an IoT-based gas leakage detection system using an ESP8266 (NodeMCU), a gas sensor (e.g., MQ-2/MQ-135), and MQTT protocol for real-time monitoring.
+
+The system continuously measures gas levels, filters noise using a moving average, and publishes the readings to an MQTT broker for integration with dashboards (like Node-RED, ThingsBoard, or Home Assistant).
+
+🔧 Features
+
+📡 Connects ESP8266 to Wi-Fi & MQTT broker.
+
+🧪 Reads gas sensor values from the analog pin.
+
+🔄 Applies a moving average filter for smooth readings.
+
+📤 Publishes data to an MQTT topic (gas_leakage/data).
+
+🔔 Can trigger alerts when thresholds are exceeded (extendable).
+
+🛠️ Hardware Required
+
+ESP8266 (NodeMCU / Wemos D1 Mini)
+
+Gas sensor (MQ-2, MQ-135, etc.)
+
+Breadboard & Jumper Wires
+
+Power Supply (5V USB or Battery Pack)
+
+📂 Project Structure
+iot-gas-detector/
+│── iot_gas_detector.ino   # Main Arduino code
+│── README.md              # Project documentation
+
+⚡ Circuit Diagram
+
+Gas Sensor AO → ESP8266 A0
+
+VCC → 5V
+
+GND → GND
+
+📡 MQTT Setup
+
+Set up an MQTT broker (e.g., Mosquitto, HiveMQ, Eclipse Mosquitto on Raspberry Pi, or public MQTT broker).
+
+Update these fields in the code with your credentials:
+
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 const char* mqtt_server = "MQTT_BROKER_ADDRESS";
@@ -11,83 +53,39 @@ const char* mqtt_user = "MQTT_USERNAME";
 const char* mqtt_password = "MQTT_PASSWORD";
 const char* mqtt_topic = "gas_leakage/data";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+📊 Sample Output
 
-// Gas sensor pin
-const int gasSensorPin = A0;
+Serial Monitor output:
 
-// Variables for filtering
-const int numReadings = 10;
-int readings[numReadings];
-int readIndex = 0;
-int total = 0;
-int average = 0;
+Average Gas Value: 320
+Average Gas Value: 318
+Average Gas Value: 322
 
-void setup_wifi() {
-  delay(10);
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
 
-  WiFi.begin(ssid, password);
+MQTT Broker message (gas_leakage/data):
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
-  }
+"320"
+"318"
+"322"
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
+🚀 Usage
 
-void reconnect() {
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP8266Client", mqtt_user, mqtt_password)) {
-      Serial.println("connected");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);
-    }
-  }
-}
+Flash the code to ESP8266 using Arduino IDE or PlatformIO.
 
-void setup() {
-  Serial.begin(115200);
-  setup_wifi();
-  client.setServer(mqtt_server, mqtt_port);
+Ensure MQTT broker is running and accessible.
 
-  // Initialize readings array
-  for (int i = 0; i < numReadings; i++) {
-    readings[i] = 0;
-  }
-}
+Open Serial Monitor to check connection logs.
 
-void loop() {
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();
+Subscribe to the MQTT topic (gas_leakage/data) using:
 
-  // Read gas sensor value
-  total = total - readings[readIndex];
-  readings[readIndex] = analogRead(gasSensorPin);
-  total = total + readings[readIndex];
-  readIndex = (readIndex + 1) % numReadings;
-  average = total / numReadings;
+mosquitto_sub -h <broker_address> -t gas_leakage/data
 
-  Serial.print("Average Gas Value: ");
-  Serial.println(average);
+📈 Future Improvements
 
-  // Publish average gas value to MQTT topic
-  char gasValueStr[10];
-  sprintf(gasValueStr, "%d", average);
-  client.publish(mqtt_topic, gasValueStr);
+Add threshold-based alert system (buzzer/LED).
 
-  delay(1000); // Send data every 1 second
-}
+Push data to cloud dashboards (ThingsBoard, Grafana, Blynk).
+
+Send mobile notifications on gas leakage detection.
+
+Integrate with home automation systems.
